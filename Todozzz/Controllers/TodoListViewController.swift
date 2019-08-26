@@ -10,15 +10,17 @@ import UIKit
 
 class TodoListViewController: UITableViewController	 {
     
-    var itemArray=["a","b","c"]
+    var itemArray = [Item]()
+    
     
     let defaults=UserDefaults.standard
     
+    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
+    
     override func viewDidLoad() {
         super.viewDidLoad()
-        if let items = defaults.array(forKey: "TodoListArray") as? [String]{
-            itemArray=items
-        }
+        
+        loadItems()
         
     }
     
@@ -28,31 +30,48 @@ class TodoListViewController: UITableViewController	 {
     
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let res=tableView.dequeueReusableCell(withIdentifier: "TodoItemCell", for: indexPath)
-        res.textLabel?.text=itemArray[indexPath.row]
-        return res
+        let cell=tableView.dequeueReusableCell(withIdentifier: "TodoItemCell", for: indexPath)
+        let item = itemArray[indexPath.row]
+        cell.textLabel?.text=item.title
+        
+        cell.accessoryType = item.done ? .checkmark : .none
+        
+        return cell
         
     }
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         print(itemArray[indexPath.row])
-        if tableView.cellForRow(at: indexPath)?.accessoryType == .checkmark{
-            tableView.cellForRow(at: indexPath)?.accessoryType = .none
-        }else{
-            tableView.cellForRow(at: indexPath)?.accessoryType = .checkmark
-        }
+        let item = itemArray[indexPath.row]
+        item.done = !item.done
+        
+        tableView.reloadData()
         tableView.deselectRow(at: indexPath, animated: true)
         
+        saveData()
+        
+    }
+    
+    func saveData(){
+        let encoder = PropertyListEncoder()
+        do{
+            let data = try encoder.encode(self.itemArray)
+            try data.write(to: self.dataFilePath!)
+        }catch{
+            print("error while encoding, \(error)")
+        }
     }
     
     //MARK - Add new Items
     @IBAction func addButtonPressed(_ sender: UIBarButtonItem) {
         let alert = UIAlertController(title: "Add new element", message: "message", preferredStyle: .alert)
         let action = UIAlertAction(title: "Add item", style: .default) { (action) in
-            let newTodo:String = alert.textFields![0].text!
-            self.itemArray.append(newTodo)
+            let item = Item()
+            item.title = alert.textFields![0].text!
+            self.itemArray.append(item)
             self.tableView.reloadData()
-            self.defaults.set(self.itemArray,forKey: "TodoListArray")
+            
+            self.saveData()
         }
         let cancel = UIAlertAction(title: "Cancel", style: .default) { (action) in
             print("cancelled")
@@ -65,6 +84,16 @@ class TodoListViewController: UITableViewController	 {
         self.present(alert, animated: true, completion: nil)
     }
     
-    
+    func loadItems(){
+        if let data = try? Data(contentsOf: dataFilePath!){
+            let decoder = PropertyListDecoder()
+            do{
+                itemArray = try decoder.decode([Item].self, from: data)
+            }
+            catch{
+                
+            }
+        }
+    }
 }
 
