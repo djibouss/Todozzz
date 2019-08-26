@@ -12,8 +12,13 @@ class TodoListViewController: UITableViewController	 {
     
     var itemArray=["a","b","c"]
     
+    let defaults=UserDefaults.standard
+    
     override func viewDidLoad() {
         super.viewDidLoad()
+        if let items = defaults.array(forKey: "TodoListArray") as? [String]{
+            itemArray=items
+        }
         
     }
     
@@ -47,6 +52,7 @@ class TodoListViewController: UITableViewController	 {
             let newTodo:String = alert.textFields![0].text!
             self.itemArray.append(newTodo)
             self.tableView.reloadData()
+            self.defaults.set(self.itemArray,forKey: "TodoListArray")
         }
         let cancel = UIAlertAction(title: "Cancel", style: .default) { (action) in
             print("cancelled")
