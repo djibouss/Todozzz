@@ -17,6 +17,8 @@ class TodoListViewController: UITableViewController	 {
     
     var category : Category? {
         didSet{
+            loadItems()
+
         }
     }
     
@@ -29,7 +31,6 @@ class TodoListViewController: UITableViewController	 {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        loadItems()
         
     }
     
@@ -42,7 +43,11 @@ class TodoListViewController: UITableViewController	 {
         let cell=tableView.dequeueReusableCell(withIdentifier: "TodoItemCell", for: indexPath)
         
         if let item = todoItems?[indexPath.row]{
-            cell.textLabel?.text=item.title
+            let dateFormatter = DateFormatter()
+            let date:Date=item.dateCreated
+            dateFormatter.dateFormat = "HH:mm:ss z"
+            let dateCreated=dateFormatter.string(from: date)
+            cell.textLabel?.text=item.title+":"+dateCreated
             cell.accessoryType = item.done ? .checkmark : .none
         }else{
             cell.textLabel?.text="no item added"
@@ -54,10 +59,11 @@ class TodoListViewController: UITableViewController	 {
     }
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        if let item = todoItems?[indexPath.row]{
+        if let item = todoItems?[indexPath.row] {
             do{
                 try realm.write {
                     item.done = !item.done
+                    realm.delete(item)
                 }
                 
             }
@@ -65,8 +71,6 @@ class TodoListViewController: UITableViewController	 {
                     print("error while updating")
                 }
             }
-            //context.delete(itemArray[indexPath.row])
-            //itemArray.remove(at: indexPath.row)
             
             tableView.reloadData()
             tableView.deselectRow(at: indexPath, animated: true)
@@ -113,7 +117,7 @@ class TodoListViewController: UITableViewController	 {
     
     
     func loadItems(){
-        todoItems = category?.items.sorted(byKeyPath: "title", ascending: true)
+        todoItems = category?.items.sorted(byKeyPath: "dateCreated", ascending: false)
         tableView.reloadData()
     }
     
@@ -128,12 +132,14 @@ class TodoListViewController: UITableViewController	 {
 
 extension TodoListViewController: UISearchBarDelegate{
     func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
-        
+        todoItems=todoItems?.filter("title CONTAINS[cd] %@",searchBar.text!).sorted(byKeyPath: "title", ascending: true)
+        tableView.reloadData()
     }
     
     
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
         if searchText.count == 0{
+            loadItems()
             DispatchQueue.main.async {
                 searchBar.resignFirstResponder()
             }

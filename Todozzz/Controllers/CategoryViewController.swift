@@ -52,8 +52,8 @@ class CategoryViewController: UITableViewController {
         let action = UIAlertAction(title: "Add category", style: .default) { (action) in
             let category = Category()
             category.name = alert.textFields![0].text!
-            self.tableView.reloadData()
             self.saveData(category)
+            self.tableView.reloadData()
         }
         let cancel = UIAlertAction(title: "Cancel", style: .default) { (action) in
             print("cancelled")
